@@ -1,0 +1,38 @@
+{
+  "cli": { "version": ">= 16.28.0", "appVersionSource": "remote" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://localhost:4000/api",
+        "EXPO_PUBLIC_COPILOT_BASE_URL": "http://localhost:3000"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "android": { "buildType": "apk" },
+      "environment": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "ios": { "simulator": false, "buildConfiguration": "Release" },
+      "android": { "buildType": "apk" },
+      "environment": "production"
+    }
+  },
+  "submit": {
+   "production": {
+    "ios": {
+      "appleId": "ashraf.shaik@zentrades.pro",
+      "appleTeamId": "TS3BFX5G72",
+      "ascAppId": "6825367233",
+      "ascApiKeyPath": "/Users/zentradesmacbook/.appstoreconnect/AuthKey_M2G3TX48LM.p8",
+      "ascApiKeyId": "M2G3TX48LM",
+      "ascApiKeyIssuerId": "a11cf053-ef6e-4efb-9fdd-af075c2943bb"
+    }
+  }
+  }
+}

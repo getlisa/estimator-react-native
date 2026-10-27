@@ -1,56 +1,59 @@
-# Welcome to your Expo app 👋
+# CLARA Estimator (estimator-native)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo / React Native client for the CLARA Estimator with two tabs — **Estimates** and **Profile** —
+plus the hidden public pages `/company-registration` and `/op-x7k2`. One codebase runs on iOS,
+Android and the web; TVs and projectors are served through the browser (native tvOS / Android TV
+would need the `react-native-tvos` fork and are out of scope).
 
-## Get started
+Backends (unchanged): the auth/users API (`technician-copilot-server`) and `copilot-server`.
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env         # edit the two URLs
+npx expo start --web         # browser (port 8081)
+npx expo start --android     # emulator: use http://10.0.2.2:… in .env
+npx expo start --ios
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Dev servers must allow the web origin: set `ALLOW_ORIGIN=http://localhost:8081` on both backends.
+copilot-server can also run with `ALLOW_DEV_AUTH_BYPASS=true` and the `EXPO_PUBLIC_COPILOT_DEV_*`
+variables from `.env.example` to skip login.
 
-### Other setup steps
+Checks: `npx tsc --noEmit`, `npx expo lint`, `npx jest`, `npx expo export -p web`.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Builds
 
-## Learn more
+EAS (`eas.json`): `eas build --profile preview --platform all`. `scripts/sync-env-to-eas.js`
+pushes `EXPO_PUBLIC_*` from `.env.preview` / `.env.production` into EAS secrets. Bundle id and
+package: `com.justclara.estimator`; scheme `estimator` (deep links such as
+`estimator://company-registration`).
 
-To learn more about developing your project with Expo, look at the following resources:
+## Layout
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `src/app` — expo-router routes: `(tabs)/estimates`, `(tabs)/profile`, `estimates/[id]`, `login`,
+  `company-registration`, `op-x7k2`. Root `_layout.tsx` guards everything except the public routes.
+- `src/components/estimates` — chat + estimate editor; `profile` — profile cards and connections;
+  `admin` — the ops console tabs.
+- `src/services` — API clients ported from the web client (`quotesService`, `connectionsService`,
+  `adminService`, …) with `authFetch` / `apiClient` doing the 401 → refresh → retry chain.
+- `src/lib/useLayout.ts` — breakpoints: compact <600, medium <1024, expanded <1600, large ≥1600.
+  Wide layouts get a top navbar, list + detail panes, and chat beside the estimate.
 
-## Join the community
+## Staying logged in on iOS / Android
 
-Join our community of developers creating universal apps.
+Tokens persist in AsyncStorage; an expired access token is refreshed silently; when the refresh
+token itself dies the app re-logs in with the credentials saved at the last interactive login
+(`expo-secure-store`: iOS Keychain / Android Keystore). Only an explicit Log Out, or a changed
+password, shows the login screen again. The web build keeps tokens only. If storing the password
+on the device is ever unwanted, the alternative is a long-lived device refresh token on the auth
+server.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Deliberate simplifications
+
+Search for `ponytail:` in the source. Notably: QuickBooks OAuth completes in the browser and the
+app refreshes connection status on return to the foreground.
+
+PDF preview (`src/components/PdfViewer.tsx`): iOS renders the file in WKWebView, Android paints it
+with pdf.js (CDN, needs internet) inside the WebView, web uses an `<iframe>`.
