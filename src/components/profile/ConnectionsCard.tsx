@@ -167,7 +167,7 @@ const CRMS: CrmCfg[] = [
     helper: 'Generate it in Housecall Pro under App Store › API (MAX plan). The key is stored encrypted.',
     connectedWith: (s) => s.hcp.hcpCompanyName, connect: (f) => connectionsService.connectHcp(f.apiKey.trim()),
     connectedMsg: 'Housecall Pro connected — sync now to bring in jobs and the price book.',
-    sync: () => connectionsService.syncHcp(), summary: (r) => `${r.jobs} jobs, ${r.items} price book items updated.`,
+    sync: () => connectionsService.syncHcp(), summary: (r) => `${r.jobs} jobs, ${r.customers} customers, ${r.items} price book items updated.`,
     disconnect: () => connectionsService.disconnectHcp(),
   },
 ];

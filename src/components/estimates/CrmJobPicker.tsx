@@ -8,9 +8,12 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { connectionsService } from '@/services/connectionsService';
 
-export type CrmProvider = 'zt' | 'uptick' | 'servicetrade' | 'hcp';
+/** 'hcp-customer' lists Housecall Pro CUSTOMERS (no job yet) in the same rows. */
+export type CrmProvider = 'zt' | 'uptick' | 'servicetrade' | 'hcp' | 'hcp-customer';
 
-const NAME: Record<CrmProvider, string> = { zt: 'ZenTrades', uptick: 'Uptick', servicetrade: 'ServiceTrade', hcp: 'Housecall Pro' };
+const NAME: Record<CrmProvider, string> = {
+  zt: 'ZenTrades', uptick: 'Uptick', servicetrade: 'ServiceTrade', hcp: 'Housecall Pro', 'hcp-customer': 'Housecall Pro',
+};
 
 /** Picker rows in one shape, whichever CRM they came from (mirrors QuotesList.tsx:56-100). */
 interface CrmJob { id: string; ref: string; title: string; subtitle: string; openCount: number }
@@ -18,6 +21,14 @@ interface CrmJob { id: string; ref: string; title: string; subtitle: string; ope
 async function fetchJobs(provider: CrmProvider, q?: string): Promise<CrmJob[]> {
   const date = (iso: string | null) => (iso ? ` · ${new Date(iso).toLocaleDateString()}` : '');
   switch (provider) {
+    case 'hcp-customer':
+      return (await connectionsService.hcpCustomers(q)).map((c) => ({
+        id: c.hcpCustomerId,
+        ref: c.name,
+        title: c.addressLine ?? c.email ?? '(no address)',
+        subtitle: [c.email, c.phone].filter(Boolean).join(' · '),
+        openCount: 0,
+      }));
     case 'hcp':
       return (await connectionsService.hcpJobs(q)).map((j) => ({
         id: j.hcpJobId,
@@ -81,18 +92,24 @@ export function CrmJobPicker({ provider, busy, onClose, onPick }: Props) {
 
   if (!provider) return null;
   const crm = NAME[provider];
+  const isCustomer = provider === 'hcp-customer';
   return (
     <Sheet
       open
       onClose={onClose}
-      title={`Choose a${provider === 'uptick' ? 'n' : ''} ${crm} job`}
-      description="The estimate will start with this job's details filled in.">
-      <Input value={search} onChangeText={setSearch} placeholder="Search by job number, description, or customer…" leftIcon="search" />
+      title={`Choose a${provider === 'uptick' ? 'n' : ''} ${crm} ${isCustomer ? 'customer' : 'job'}`}
+      description={`The estimate will start with this ${isCustomer ? "customer's" : "job's"} details filled in.`}>
+      <Input
+        value={search}
+        onChangeText={setSearch}
+        placeholder={isCustomer ? 'Search by name, email, phone, or address…' : 'Search by job number, description, or customer…'}
+        leftIcon="search"
+      />
       {loading && !jobs ? (
         <ActivityIndicator color={colors.tint} style={{ paddingVertical: Spacing['2xl'] }} />
       ) : !jobs?.length ? (
         <ThemedText type="caption" style={{ textAlign: 'center', paddingVertical: Spacing['2xl'] }}>
-          No {crm} jobs yet — ask an admin to sync from My Profile.
+          No {crm} {isCustomer ? 'customers' : 'jobs'} yet — ask an admin to sync from My Profile.
         </ThemedText>
       ) : (
         jobs.map((job) => (

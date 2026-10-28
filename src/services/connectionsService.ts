@@ -136,6 +136,16 @@ export interface HcpJob {
   hcpUpdatedAt: string | null;
 }
 
+/** One synced Housecall Pro customer, as the "from a customer" picker shows it. */
+export interface HcpCustomer {
+  hcpCustomerId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  addressLine: string | null;
+  hcpUpdatedAt: string | null;
+}
+
 /** The CRM rows that expose a live sync caption. */
 export type SyncProvider = 'zt' | 'uptick' | 'servicetrade' | 'hcp';
 
@@ -334,18 +344,24 @@ export const connectionsService = {
       body: JSON.stringify({ apiKey }),
     }).then((r) => json<{ connected: boolean; hcpCompanyName: string | null }>(r)),
 
-  /** Pull jobs and the price book (materials + services) from Housecall Pro. Admin-only. */
-  syncHcp: (): Promise<{ jobs: number; items: number; errors: string[] }> =>
+  /** Pull jobs, customers and the price book (materials + services) from Housecall Pro. Admin-only. */
+  syncHcp: (): Promise<{ jobs: number; customers: number; items: number; errors: string[] }> =>
     authFetch(`${API_BASE}/connections/hcp/sync`, {
       method: "POST",
       headers: buildHeaders(),
-    }).then((r) => json<{ jobs: number; items: number; errors: string[] }>(r)),
+    }).then((r) => json<{ jobs: number; customers: number; items: number; errors: string[] }>(r)),
 
   /** Synced Housecall Pro jobs for the new-estimate picker. Any role. */
   hcpJobs: (q?: string): Promise<HcpJob[]> =>
     authFetch(`${API_BASE}/connections/hcp/jobs${q ? `?q=${encodeURIComponent(q)}` : ""}`, {
       headers: buildHeaders(false),
     }).then((r) => json<HcpJob[]>(r)),
+
+  /** Synced Housecall Pro customers for the "from a customer" (no job) picker. Any role. */
+  hcpCustomers: (q?: string): Promise<HcpCustomer[]> =>
+    authFetch(`${API_BASE}/connections/hcp/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`, {
+      headers: buildHeaders(false),
+    }).then((r) => json<HcpCustomer[]>(r)),
 
   /** Forget the company's Housecall Pro connection. Admin-only. */
   disconnectHcp: (): Promise<void> =>

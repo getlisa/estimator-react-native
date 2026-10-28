@@ -165,6 +165,8 @@ export interface Quote {
   hcpEstimateRef: string | null;
   hcpSyncedAt: string | null;
   hcpSyncError: string | null;
+  /** The linked customer's Housecall Pro id — a quote started from an HCP customer (no job) posts through it. */
+  hcpCustomerId: string | null;
   blockingFlagCount: number;
 }
 
@@ -223,8 +225,8 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const quotesService = {
-  /** A CRM job id links the new estimate to a synced job — chat opens pre-seeded. One at most. */
-  create: (seed?: { ztTicketId?: string; uptickTaskId?: string; stJobId?: string; hcpJobId?: string }): Promise<Quote> =>
+  /** A CRM job id (or a Housecall Pro customer id) seeds the new estimate — chat opens pre-filled. One at most. */
+  create: (seed?: { ztTicketId?: string; uptickTaskId?: string; stJobId?: string; hcpJobId?: string; hcpCustomerId?: string }): Promise<Quote> =>
     authFetch(API_BASE, {
       method: "POST",
       headers: buildHeaders(),
