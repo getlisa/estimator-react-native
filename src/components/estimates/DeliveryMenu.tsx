@@ -72,7 +72,8 @@ export function DeliveryMenu({ quote, onQuoteChange }: Props) {
   const ztSyncable = connections?.zt?.connected === true && !!quote.ztTicketId && completed;
   const uptickSyncable = connections?.uptick?.connected === true && !!quote.uptickTaskId && completed;
   const stSyncable = connections?.servicetrade?.connected === true && !!quote.stJobId && completed;
-  const hcpSyncable = connections?.hcp?.connected === true && !!quote.hcpJobId && completed;
+  // Housecall Pro also files quotes started from a customer with no job (customer_hcp link).
+  const hcpSyncable = connections?.hcp?.connected === true && !!(quote.hcpJobId || quote.hcpCustomerId) && completed;
   const retry = 'The last send failed — this retries it.';
 
   const items: { key: string; icon: keyof typeof Ionicons.glyphMap; title: string; subtitle?: string; onPress: () => void }[] = [

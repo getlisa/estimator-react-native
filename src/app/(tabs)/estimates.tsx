@@ -15,7 +15,9 @@ import { useLayout } from '@/lib/useLayout';
 import { connectionsService, type ConnectionsStatus } from '@/services/connectionsService';
 import { quotesService, quoteTitle, type Quote } from '@/services/quotesService';
 
-const CRM_LABEL: Record<CrmProvider, string> = { zt: 'ZenTrades', uptick: 'Uptick', servicetrade: 'ServiceTrade', hcp: 'Housecall Pro' };
+const CRM_LABEL: Record<CrmProvider, string> = {
+  zt: 'ZenTrades', uptick: 'Uptick', servicetrade: 'ServiceTrade', hcp: 'Housecall Pro', 'hcp-customer': 'Housecall Pro',
+};
 
 /** Chat list — one chat = one quote. Draft list by default (PRD US1/US9). */
 export default function EstimatesScreen() {
@@ -44,7 +46,10 @@ export default function EstimatesScreen() {
   useFocusEffect(useCallback(() => { load(quotes !== null); }, [load])); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { connectionsService.get().then(setConnections).catch(() => undefined); }, []);
 
-  const crms = (['zt', 'uptick', 'servicetrade', 'hcp'] as CrmProvider[]).filter((p) => connections?.[p]?.connected === true);
+  // 'hcp-customer' rides on the Housecall Pro connection: customers with no job yet.
+  const crms = (['zt', 'uptick', 'servicetrade', 'hcp', 'hcp-customer'] as CrmProvider[]).filter(
+    (p) => connections?.[p === 'hcp-customer' ? 'hcp' : p]?.connected === true
+  );
 
   // Every width opens the quote on its own screen; wide screens show chat and estimate side by side there.
   const open = (id: string) => router.push(`/estimates/${id}`);
@@ -119,7 +124,7 @@ export default function EstimatesScreen() {
                   {q.ztTicketId && <Badge size="sm">{`ZT ${q.ztTicketId}${q.customerName ? ` · ${q.customerName}` : ''}`}</Badge>}
                   {q.uptickTaskId && <Badge size="sm">{`Uptick ${q.uptickTaskId}${q.customerName ? ` · ${q.customerName}` : ''}`}</Badge>}
                   {q.stJobId && <Badge size="sm">{`ServiceTrade ${q.stJobId}${q.customerName ? ` · ${q.customerName}` : ''}`}</Badge>}
-                  {q.hcpJobId && <Badge size="sm">{`Housecall Pro${q.customerName ? ` · ${q.customerName}` : ''}`}</Badge>}
+                  {(q.hcpJobId || q.hcpCustomerId) && <Badge size="sm">{`Housecall Pro${q.customerName ? ` · ${q.customerName}` : ''}`}</Badge>}
                   <Badge size="sm" variant={q.status === 'COMPLETED' ? 'primary' : 'default'}>
                     {q.status === 'COMPLETED' ? 'Completed' : 'Draft'}
                   </Badge>
@@ -147,8 +152,12 @@ export default function EstimatesScreen() {
           <MenuItem
             key={p}
             icon="construct-outline"
-            title={`From ${CRM_LABEL[p]} job`}
-            subtitle={p === 'uptick' ? 'Pick a synced task — chat starts pre-filled' : 'Pick a synced job — chat starts pre-filled'}
+            title={p === 'hcp-customer' ? 'From Housecall Pro customer' : `From ${CRM_LABEL[p]} job`}
+            subtitle={
+              p === 'hcp-customer' ? 'Pick a customer — no job needed'
+              : p === 'uptick' ? 'Pick a synced task — chat starts pre-filled'
+              : 'Pick a synced job — chat starts pre-filled'
+            }
             onPress={() => { setChooser(false); setPicker(p); }}
           />
         ))}
@@ -163,6 +172,7 @@ export default function EstimatesScreen() {
             provider === 'uptick' ? { uptickTaskId: id }
             : provider === 'servicetrade' ? { stJobId: id }
             : provider === 'hcp' ? { hcpJobId: id }
+            : provider === 'hcp-customer' ? { hcpCustomerId: id }
             : { ztTicketId: id }
           );
         }}
